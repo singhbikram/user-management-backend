@@ -5,9 +5,13 @@ import com.syn.usermanagement.exception.ResourceNotFoundException;
 import com.syn.usermanagement.exception.EmailAlreadyExistsException;
 import com.syn.usermanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -15,9 +19,10 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final S3Service s3Service;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    public Page<User> getAllUsers(Pageable pageable) {
+        return userRepository.findAll(pageable);
     }
 
     public User getUserById(Long id) {
@@ -55,4 +60,41 @@ public class UserService {
         User user = getUserById(id);
         userRepository.delete(user);
     }
+
+    /**
+     * Upload photo for a user
+     */
+    public User uploadUserPhoto(Long userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        // Delete old photo if exists
+        if (user.getPhotoUrl() != null) {
+            s3Service.deleteFile(user.getPhotoUrl());
+        }
+
+        // Upload new photo to S3
+        String photoUrl = s3Service.uploadFile(file, userId);
+
+        // Update user with new photo URL
+        user.setPhotoUrl(photoUrl);
+        return userRepository.save(user);
+    }
+
+    /**
+     * Delete user photo
+     */
+    public User deleteUserPhoto(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        if (user.getPhotoUrl() != null) {
+            s3Service.deleteFile(user.getPhotoUrl());
+            user.setPhotoUrl(null);
+            return userRepository.save(user);
+        }
+
+        return user;
+    }
+
 }
