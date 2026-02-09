@@ -63,6 +63,7 @@ pipeline {
     
     post {
         success {
+            deleteDir()
             echo "Backend successfully updated!"
         }
         failure {
