@@ -25,9 +25,10 @@ resource "aws_instance" "database" {
             
                 # inner heredoc
                 sudo mysql -u root <<SQL_SCRIPT
-                CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'admin';
-                GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
-                FLUSH PRIVILEGES;
+                    CREATE DATABASE IF NOT EXISTS users;
+                    CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED WITH mysql_native_password BY 'admin';
+                    GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
+                    FLUSH PRIVILEGES;
                 SQL_SCRIPT
                 
                 sudo systemctl restart mysql
