@@ -13,25 +13,25 @@ resource "aws_instance" "database" {
   key_name = "terr-ansible-pipeline"
 
   user_data = <<-EOF
-              #!/bin/bash
+                #!/bin/bash
                 sudo apt update -y
                 sudo apt install -y mysql-server
                 sudo systemctl start mysql
+                
                 CONFIG_FILE="/etc/mysql/mysql.conf.d/mysqld.cnf"
-                # Update bind-address
                 sudo sed -i "s/^bind-address.*/bind-address            = 0.0.0.0/" "$CONFIG_FILE"
-                # Update mysqlx-bind-address
                 sudo sed -i "s/^mysqlx-bind-address.*/mysqlx-bind-address     = 0.0.0.0/" "$CONFIG_FILE"
                 sudo systemctl restart mysql
-
-                sudo mysql -u root <<EOF
+            
+                # inner heredoc
+                sudo mysql -u root <<SQL_SCRIPT
                 CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'admin';
                 GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
                 FLUSH PRIVILEGES;
-                EOF
+                SQL_SCRIPT
                 
                 sudo systemctl restart mysql
-              EOF
+            EOF
   tags = {
     Name = "database"
   }
