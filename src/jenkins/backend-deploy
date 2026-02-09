@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+
+    environment {
+        ANSIBLE_DIR = "/var/lib/jenkins/ansible"
+        SSH_KEY = credentials('aws-ssh-key')
+    }
+
+    stages {
+        stage('Clone Repo') {
+            steps {
+                git url: 'https://github.com/singhbikram/user-management-backend.git', 
+                branch: 'main'
+            }
+        }
+        stage('Verify Inventory') {
+            steps {
+                script {
+                    // Check if Terraform actually created the file before starting
+                    if (!fileExists("${ANSIBLE_DIR}/inventory.ini")) {
+                        error "Inventory file not found at ${ANSIBLE_DIR}/inventory.ini. Run the Terraform pipeline first!"
+                    }
+                }
+            }
+        }
+        
+        stage('Configure App with Ansible') {
+            steps {
+                ansiblePlaybook(
+                    installation: 'Ansible',
+                    playbook: "${ANSIBLE_DIR}/backend-playbook.yml",
+                    inventory: "${ANSIBLE_DIR}/inventory.ini",
+                    colorized: true
+                )
+            }
+        }
+
+        stage('Build & Run') {
+            steps {
+               sh '''
+                    cd /var/lib/jenkins/workspace/user-mngt
+                    cat ./src/main/resources/application.properties
+                    mvn clean install -DskipTests
+                '''
+            }
+        }
+        
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(['aws-ssh-key']) { 
+                    script {
+                        def backend_ip = sh(script: "grep -A1 '\\[backend\\]' ${ANSIBLE_DIR}/inventory.ini | tail -n1", returnStdout: true).trim()
+                        
+                        // No need for -i ${SSH_KEY} anymore!
+                        sh "scp -o StrictHostKeyChecking=no target/*.jar ubuntu@${backend_ip}:/home/ubuntu/app.jar"
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@${backend_ip} 'fuser -k 8081/tcp || true; nohup java -jar /home/ubuntu/app.jar > /home/ubuntu/app.log 2>&1 &'"
+                    }
+                }
+            }
+        }
+
+    }
+    
+    post {
+        success {
+            echo "Backend successfully updated!"
+        }
+        failure {
+            echo "Deployment failed. Check SSH connectivity or Playbook syntax."
+        }
+    }
+}
