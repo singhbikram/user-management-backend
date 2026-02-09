@@ -23,14 +23,13 @@ resource "aws_instance" "database" {
                 # Update mysqlx-bind-address
                 sudo sed -i "s/^mysqlx-bind-address.*/mysqlx-bind-address     = 0.0.0.0/" "$CONFIG_FILE"
                 sudo systemctl restart mysql
-                sudo mysql
-                # Create admin user (accessible from anywhere)
-                CREATE USER 'admin'@'%' IDENTIFIED BY 'admin';
-                # Grant ALL privileges on ALL databases
+
+                sudo mysql -u root <<EOF
+                CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'admin';
                 GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
-                # Apply changes
                 FLUSH PRIVILEGES;
-                EXIT;
+                EOF
+                
                 sudo systemctl restart mysql
               EOF
   tags = {
