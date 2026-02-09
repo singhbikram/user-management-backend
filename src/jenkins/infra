@@ -1,0 +1,36 @@
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout Terraform') {
+            steps {
+                dir('temp_repo') {
+                    git url: "https://github.com/singhbikram/user-management-backend.git", 
+                    branch: 'main'
+                }
+                sh "cp temp_repo/src/terraform/main.tf /var/lib/jenkins/terraform/"
+                sh "rm -rf temp_repo"
+            }
+        }
+        stage('Create Infra') {
+            steps {
+                dir('/var/lib/jenkins/terraform') {
+                    echo "4. Initializing Terraform..."
+                    // Note: terraform init will still work with just a main.tf
+                    sh '''
+                    terraform init
+                    terraform validate
+                    terraform plan
+                    terraform apply -auto-approve
+                    '''
+                }
+            }
+        }
+    }
+    post {
+        always {
+            deleteDir()
+        }
+    }
+}
