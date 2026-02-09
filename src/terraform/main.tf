@@ -5,7 +5,7 @@ provider "aws" {
 }
 
 resource "aws_instance" "database" {
-  ami           = var.ami_id # Amazon Linux 2 AMI
+  ami           = var.ami_id 
   instance_type = var.instance_type
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
@@ -39,7 +39,7 @@ resource "aws_instance" "database" {
 }
 
 resource "aws_instance" "backend" {
-  ami           = var.ami_id # Amazon Linux 2 AMI
+  ami           = var.ami_id
   instance_type = var.instance_type
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
@@ -49,6 +49,7 @@ resource "aws_instance" "backend" {
   user_data = <<-EOF
               #!/bin/bash
                 sudo apt update -y
+                sudo apt install -y openjdk-21-jre-headless
               EOF
   tags = {
     Name = "backend"
@@ -56,7 +57,7 @@ resource "aws_instance" "backend" {
 }
 
 resource "aws_instance" "frontend" {
-  ami           = var.ami_id # Amazon Linux 2 AMI
+  ami           = var.ami_id
   instance_type = var.instance_type
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
