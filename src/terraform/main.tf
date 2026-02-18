@@ -10,7 +10,7 @@ resource "aws_instance" "database" {
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
   associate_public_ip_address = true 
-  key_name = "terr-ansible-pipeline"
+  key_name = "user"
 
   user_data = <<-EOF
                 #!/bin/bash
@@ -44,7 +44,7 @@ resource "aws_instance" "backend" {
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
   associate_public_ip_address = true
-  key_name = "terr-ansible-pipeline"
+  key_name = "user"
 
   user_data = <<-EOF
               #!/bin/bash
@@ -62,7 +62,7 @@ resource "aws_instance" "frontend" {
   subnet_id = var.subnet_id
   security_groups = var.security_group_ids
   associate_public_ip_address = true
-  key_name = "terr-ansible-pipeline"
+  key_name = "user"
 
   user_data = <<-EOF
               #!/bin/bash
